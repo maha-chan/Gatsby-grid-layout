@@ -2,7 +2,16 @@ import React from "react";
 import PropTypes from "prop-types";
 import _ from "lodash";
 import { Responsive, WidthProvider } from "react-grid-layout";
+import { Icon } from 'semantic-ui-react'
 const ResponsiveReactGridLayout = WidthProvider(Responsive);
+
+let idCounter = 100;
+
+const getId = () => {
+  idCounter++;
+
+  return idCounter.toString();
+};
 
 export default class ShowcaseLayout extends React.Component {
   constructor(props) {
@@ -18,14 +27,29 @@ export default class ShowcaseLayout extends React.Component {
     this.onCompactTypeChange = this.onCompactTypeChange.bind(this);
     this.onLayoutChange = this.onLayoutChange.bind(this);
     this.onNewLayout = this.onNewLayout.bind(this);
+    this.removeItem = this.removeItem.bind(this);
   }
 
   componentDidMount() {
     this.setState({ mounted: true });
   }
+  
+  onBreakpointChange(breakpoint) {
+    this.setState({
+      currentBreakpoint: breakpoint
+    });
+  }
+  
+  removeItem(e){
+    const layout = this.state.layouts.lg.filter(item => item.i !== e.target.id);
+    console.log(layout);
+    this.setState({...this.state,layouts:{lg:layout}})
+  }
 
-  generateDOM() {
+  generateDOM=()=> {
+    const _this = this;
     return _.map(this.state.layouts.lg, function(l, i) {
+      console.log(l);
       return (
         <div key={i} className={l.static ? "static" : ""}>
           {l.static ? (
@@ -36,18 +60,16 @@ export default class ShowcaseLayout extends React.Component {
               Static - {i}
             </span>
           ) : (
-            <span className="text">{i}</span>
+            <div className="text">{i}<Icon id={i} color="red" onClick={_this.removeItem} className="span-right" name="trash"/></div>
+            // <div className="text">{i}<Icon name={i} color="red" onClick={this.setState(
+            //   {...this.state,layouts:{lg: this.state.layouts.lg.filter(item => item.i !== "7") }}
+            // )} className="span-right" name="trash"/></div>
           )}
         </div>
       );
     });
   }
 
-  onBreakpointChange(breakpoint) {
-    this.setState({
-      currentBreakpoint: breakpoint
-    });
-  }
 
   onCompactTypeChange() {
     const { compactType: oldCompactType } = this.state;
@@ -70,6 +92,27 @@ export default class ShowcaseLayout extends React.Component {
     });
   }
 
+  addNewItem = () => {
+    const { layouts } = this.state;
+    const newItem = { x: 0, y: 0, w: 2, h: 2, i: getId() };
+
+    if (layouts.lg.some(item => item.x === 0 && item.y === 0)) {
+      this.setState({
+        layouts:{lg: layouts.lg
+          .map(item => {
+            if (item.x === 0) {
+              return { y: item.y++, ...item };
+            }
+
+            return item;
+          })
+          .concat([newItem])}
+      });
+    } else {
+      this.setState({ layouts:{lg:layouts.lg.concat([newItem])} });
+    }
+  };
+
   render() {
     return (
       <div>
@@ -86,7 +129,7 @@ export default class ShowcaseLayout extends React.Component {
         <button onClick={this.onNewLayout}>Generate New Layout</button>
         <button onClick={this.onCompactTypeChange}>
           Change Compaction Type
-        </button>
+        </button><button onClick={this.addNewItem}>Add item</button>
         <ResponsiveReactGridLayout
           {...this.props}
           layouts={this.state.layouts}
@@ -106,6 +149,7 @@ export default class ShowcaseLayout extends React.Component {
     );
   }
 }
+
 
 ShowcaseLayout.propTypes = {
   onLayoutChange: PropTypes.func.isRequired
